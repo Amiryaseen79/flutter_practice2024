@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // For Date formatting in Age Calculator
+import 'dart:math'; // Import for square root in quadratic calculator
 
 void main() {
   runApp(MultiCalculator());
@@ -27,232 +27,540 @@ class MultiCalculatorScreen extends StatefulWidget {
 class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
   String _selectedCalculator = '';
 
-  // Controllers for BMI Calculator
+  // Controllers for existing calculators (BMI, Age, Tip, Currency)
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
-  double _bmi = 0.0;
-  String _bmiCategory = '';
-
-  // Controllers for Age Calculator
-  DateTime? _selectedDate;
-  int _age = 0;
-
-  // Controllers for Tip Calculator
   final TextEditingController _billAmountController = TextEditingController();
   final TextEditingController _tipPercentageController = TextEditingController();
-  double _totalTip = 0.0;
+  final TextEditingController _amountController = TextEditingController();
 
-  // Method to show only one calculator at a time
-  void _showCalculator(String calculator) {
+  // Controllers for Quadratic Equation Calculator
+  final TextEditingController _aController = TextEditingController();
+  final TextEditingController _bController = TextEditingController();
+  final TextEditingController _cController = TextEditingController();
+
+  // Controllers for Temperature Converter
+  final TextEditingController _temperatureController = TextEditingController();
+  String _selectedTemperatureFrom = 'Celsius';
+  String _selectedTemperatureTo = 'Fahrenheit';
+
+  // Controllers for Fuel Efficiency Calculator
+  final TextEditingController _distanceController = TextEditingController();
+  final TextEditingController _fuelConsumedController = TextEditingController();
+
+  // Controllers for Discount Calculator
+  final TextEditingController _originalPriceController = TextEditingController();
+  final TextEditingController _discountPercentageController = TextEditingController();
+
+  // Methods for showing calculators
+  void _showCalculatorDialog(String calculator) {
     setState(() {
       _selectedCalculator = calculator;
     });
-  }
 
-  // BMI Calculation
-  void _calculateBMI() {
-    final double? height = double.tryParse(_heightController.text);
-    final double? weight = double.tryParse(_weightController.text);
-
-    if (height != null && weight != null && height > 0 && weight > 0) {
-      setState(() {
-        _bmi = weight / (height * height);
-        _bmiCategory = _getBMICategory(_bmi);
-      });
+    if (calculator == 'bmi') {
+      _showBMIDialog();
+    } else if (calculator == 'age') {
+      _showAgeDialog();
+    } else if (calculator == 'tip') {
+      _showTipDialog();
+    } else if (calculator == 'currency') {
+      _showCurrencyConverterDialog();
+    } else if (calculator == 'quadratic') {
+      _showQuadraticDialog();
+    } else if (calculator == 'temperature') {
+      _showTemperatureConverterDialog();
+    } else if (calculator == 'fuel') {
+      _showFuelEfficiencyDialog();
+    } else if (calculator == 'discount') {
+      _showDiscountDialog();
     }
   }
 
-  String _getBMICategory(double bmi) {
-    if (bmi < 18.5) {
-      return "Underweight";
-    } else if (bmi >= 18.5 && bmi < 24.9) {
-      return "Normal weight";
-    } else if (bmi >= 25.0 && bmi < 29.9) {
-      return "Overweight";
-    } else {
-      return "Obesity";
-    }
-  }
-
-  // Age Calculation
-  void _selectDate(BuildContext context) async {
-    DateTime? pickedDate = await showDatePicker(
+  // BMI Calculator Dialog
+  void _showBMIDialog() {
+    showDialog(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      builder: (context) {
+        return AlertDialog(
+          title: Text('BMI Calculator'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _heightController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Enter Height (m)'),
+              ),
+              SizedBox(height: 8),
+              TextField(
+                controller: _weightController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Enter Weight (kg)'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final height = double.tryParse(_heightController.text);
+                final weight = double.tryParse(_weightController.text);
+
+                if (height != null && weight != null && height > 0) {
+                  final bmi = weight / (height * height);
+                  Navigator.of(context).pop(); // Close the dialog first
+                  _showResultDialog('BMI: ${bmi.toStringAsFixed(2)}');
+                } else {
+                  Navigator.of(context).pop(); // Close the dialog first
+                  _showResultDialog('Invalid input');
+                }
+              },
+              child: Text('Calculate'),
+            ),
+          ],
+        );
+      },
     );
-    if (pickedDate != null) {
-      setState(() {
-        _selectedDate = pickedDate;
-        _age = DateTime.now().year - pickedDate.year;
-      });
+  }
+
+  // Age Calculator Dialog
+  void _showAgeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Age Calculator'),
+          content: Text('Age calculator will be implemented here.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Tip Calculator Dialog
+  void _showTipDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Tip Calculator'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _billAmountController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Enter Bill Amount'),
+              ),
+              SizedBox(height: 8),
+              TextField(
+                controller: _tipPercentageController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Enter Tip Percentage'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final billAmount = double.tryParse(_billAmountController.text);
+                final tipPercentage = double.tryParse(_tipPercentageController.text);
+
+                if (billAmount != null && tipPercentage != null) {
+                  final tip = billAmount * (tipPercentage / 100);
+                  final totalAmount = billAmount + tip;
+                  Navigator.of(context).pop(); // Close the dialog first
+                  _showResultDialog('Tip: ${tip.toStringAsFixed(2)}, Total: ${totalAmount.toStringAsFixed(2)}');
+                } else {
+                  Navigator.of(context).pop(); // Close the dialog first
+                  _showResultDialog('Invalid input');
+                }
+              },
+              child: Text('Calculate'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Currency Converter Dialog
+  void _showCurrencyConverterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Currency Converter'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _amountController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Enter Amount'),
+              ),
+              SizedBox(height: 16),
+              Text('Conversion logic can be implemented here.'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // Currency conversion logic will go here
+                Navigator.of(context).pop();
+              },
+              child: Text('Convert'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Quadratic Equation Solver
+  void _solveQuadratic() {
+    final double? a = double.tryParse(_aController.text);
+    final double? b = double.tryParse(_bController.text);
+    final double? c = double.tryParse(_cController.text);
+
+    if (a != null && b != null && c != null && a != 0) {
+      final double discriminant = (b * b) - (4 * a * c);
+      if (discriminant > 0) {
+        double x1 = (-b + sqrt(discriminant)) / (2 * a);
+        double x2 = (-b - sqrt(discriminant)) / (2 * a);
+        Navigator.of(context).pop(); // Close the dialog first
+        _showResultDialog('Roots are: x1 = ${x1.toStringAsFixed(2)}, x2 = ${x2.toStringAsFixed(2)}');
+      } else if (discriminant == 0) {
+        double x = -b / (2 * a);
+        Navigator.of(context).pop(); // Close the dialog first
+        _showResultDialog('Root is: x = ${x.toStringAsFixed(2)}');
+      } else {
+        Navigator.of(context).pop(); // Close the dialog first
+        _showResultDialog('No real roots.');
+      }
     }
   }
 
-  // Tip Calculation
-  void _calculateTip() {
-    final double? billAmount = double.tryParse(_billAmountController.text);
-    final double? tipPercentage = double.tryParse(_tipPercentageController.text);
+  // Temperature Converter
+  void _convertTemperature() {
+    final double? temperature = double.tryParse(_temperatureController.text);
 
-    if (billAmount != null && tipPercentage != null && billAmount > 0 && tipPercentage > 0) {
-      setState(() {
-        _totalTip = (billAmount * (tipPercentage / 100));
-      });
+    if (temperature != null) {
+      double convertedTemp = 0.0;
+
+      if (_selectedTemperatureFrom == 'Celsius' && _selectedTemperatureTo == 'Fahrenheit') {
+        convertedTemp = (temperature * 9 / 5) + 32;
+      } else if (_selectedTemperatureFrom == 'Fahrenheit' && _selectedTemperatureTo == 'Celsius') {
+        convertedTemp = (temperature - 32) * 5 / 9;
+      } else if (_selectedTemperatureFrom == 'Celsius' && _selectedTemperatureTo == 'Kelvin') {
+        convertedTemp = temperature + 273.15;
+      } else if (_selectedTemperatureFrom == 'Kelvin' && _selectedTemperatureTo == 'Celsius') {
+        convertedTemp = temperature - 273.15;
+      } else if (_selectedTemperatureFrom == 'Fahrenheit' && _selectedTemperatureTo == 'Kelvin') {
+        convertedTemp = (temperature - 32) * 5 / 9 + 273.15;
+      } else if (_selectedTemperatureFrom == 'Kelvin' && _selectedTemperatureTo == 'Fahrenheit') {
+        convertedTemp = (temperature - 273.15) * 9 / 5 + 32;
+      }
+      Navigator.of(context).pop(); // Close the dialog first
+      _showResultDialog('Converted Temperature: ${convertedTemp.toStringAsFixed(2)} $_selectedTemperatureTo');
     }
   }
 
+  // Fuel Efficiency Calculator
+  void _calculateFuelEfficiency() {
+    final double? distance = double.tryParse(_distanceController.text);
+    final double? fuelConsumed = double.tryParse(_fuelConsumedController.text);
+
+    if (distance != null && fuelConsumed != null && fuelConsumed > 0) {
+      final fuelEfficiency = distance / fuelConsumed;
+      Navigator.of(context).pop(); // Close the dialog first
+      _showResultDialog('Fuel Efficiency: ${fuelEfficiency.toStringAsFixed(2)} km/l');
+    } else {
+      Navigator.of(context).pop(); // Close the dialog first
+      _showResultDialog('Invalid input');
+    }
+  }
+
+  // Discount Calculator Dialog
+  void _showDiscountDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Discount Calculator'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _originalPriceController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Enter Original Price'),
+              ),
+              SizedBox(height: 8),
+              TextField(
+                controller: _discountPercentageController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Enter Discount Percentage'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final originalPrice = double.tryParse(_originalPriceController.text);
+                final discountPercentage = double.tryParse(_discountPercentageController.text);
+
+                if (originalPrice != null && discountPercentage != null) {
+                  final discountAmount = originalPrice * (discountPercentage / 100);
+                  final discountedPrice = originalPrice - discountAmount;
+                  Navigator.of(context).pop(); // Close the dialog first
+                  _showResultDialog('Discount Amount: ${discountAmount.toStringAsFixed(2)}, Discounted Price: ${discountedPrice.toStringAsFixed(2)}');
+                } else {
+                  Navigator.of(context).pop(); // Close the dialog first
+                  _showResultDialog('Invalid input');
+                }
+              },
+              child: Text('Calculate'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Common Result Dialog
+  void _showResultDialog(String result) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Result'),
+          content: Text(result),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Fuel Efficiency Calculator Dialog
+  void _showFuelEfficiencyDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Fuel Efficiency Calculator'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _distanceController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Enter Distance (km)'),
+              ),
+              SizedBox(height: 8),
+              TextField(
+                controller: _fuelConsumedController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Enter Fuel Consumed (l)'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: _calculateFuelEfficiency,
+              child: Text('Calculate'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Temperature Converter Dialog
+  void _showTemperatureConverterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Temperature Converter'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _temperatureController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Enter Temperature'),
+              ),
+              SizedBox(height: 8),
+              DropdownButton<String>(
+                value: _selectedTemperatureFrom,
+                items: ['Celsius', 'Fahrenheit', 'Kelvin']
+                    .map((unit) => DropdownMenuItem<String>(
+                  value: unit,
+                  child: Text(unit),
+                ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedTemperatureFrom = value!;
+                  });
+                },
+                hint: Text('From'),
+              ),
+              DropdownButton<String>(
+                value: _selectedTemperatureTo,
+                items: ['Celsius', 'Fahrenheit', 'Kelvin']
+                    .map((unit) => DropdownMenuItem<String>(
+                  value: unit,
+                  child: Text(unit),
+                ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedTemperatureTo = value!;
+                  });
+                },
+                hint: Text('To'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: _convertTemperature,
+              child: Text('Convert'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Quadratic Equation Solver Dialog
+  void _showQuadraticDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Quadratic Equation Solver'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _aController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Enter a'),
+              ),
+              SizedBox(height: 8),
+              TextField(
+                controller: _bController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Enter b'),
+              ),
+              SizedBox(height: 8),
+              TextField(
+                controller: _cController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: 'Enter c'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _solveQuadratic();
+              },
+              child: Text('Solve'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Main layout
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Multi Calculator'),
-        centerTitle: true,
       ),
-      body: Container(
+      body: GridView.count(
+        crossAxisCount: 2,
+        padding: EdgeInsets.all(16),
+        children: [
+          _buildCalculatorButton('BMI Calculator', 'bmi'),
+          _buildCalculatorButton('Age Calculator', 'age'),
+          _buildCalculatorButton('Tip Calculator', 'tip'),
+          _buildCalculatorButton('Currency Converter', 'currency'),
+          _buildCalculatorButton('Quadratic Solver', 'quadratic'),
+          _buildCalculatorButton('Temperature Converter', 'temperature'),
+          _buildCalculatorButton('Fuel Efficiency', 'fuel'),
+          _buildCalculatorButton('Discount Calculator', 'discount'),
+        ],
+      ),
+    );
+  }
+
+  // Helper method to build calculator buttons with gradient background
+  Widget _buildCalculatorButton(String label, String calculatorType) {
+    return GestureDetector(
+      onTap: () => _showCalculatorDialog(calculatorType),
+      child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
+            colors: [Colors.blue, Colors.purple],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.blue.shade300,
-              Colors.purple.shade400,
-            ],
           ),
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // Buttons to switch calculators
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: () => _showCalculator('bmi'),
-                    style: ElevatedButton.styleFrom(
-                      shape: CircleBorder(),
-                      padding: EdgeInsets.all(24),
-                      minimumSize: Size(80, 80), // Ensures the button is circular
-                      primary: Colors.blue, // Button color
-                    ),
-                    child: Text('BMI'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => _showCalculator('age'),
-                    style: ElevatedButton.styleFrom(
-                      shape: CircleBorder(),
-                      padding: EdgeInsets.all(24),
-                      minimumSize: Size(80, 80),
-                      primary: Colors.green, // Button color
-                    ),
-                    child: Text('Age'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => _showCalculator('tip'),
-                    style: ElevatedButton.styleFrom(
-                      shape: CircleBorder(),
-                      padding: EdgeInsets.all(24),
-                      minimumSize: Size(80, 80),
-                      primary: Colors.orange, // Button color
-                    ),
-                    child: Text('Tip'),
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-
-              // Display BMI Calculator
-              if (_selectedCalculator == 'bmi') ...[
-                TextField(
-                  controller: _heightController,
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: 'Enter height in meters',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                SizedBox(height: 16),
-                TextField(
-                  controller: _weightController,
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: 'Enter weight in kilograms',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _calculateBMI,
-                  child: Text('Calculate BMI'),
-                ),
-                SizedBox(height: 20),
-                if (_bmi > 0) ...[
-                  Text(
-                    'Your BMI: ${_bmi.toStringAsFixed(2)}',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Category: $_bmiCategory',
-                    style: TextStyle(fontSize: 20),
-                  ),
-                ]
-              ],
-
-              // Display Age Calculator
-              if (_selectedCalculator == 'age') ...[
-                ElevatedButton(
-                  onPressed: () => _selectDate(context),
-                  child: Text('Select Your Birthdate'),
-                ),
-                SizedBox(height: 20),
-                if (_selectedDate != null) ...[
-                  Text(
-                    "Selected Date: ${DateFormat('yMMMMd').format(_selectedDate!)}",
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    'Your Age: $_age years',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ],
-
-              // Display Tip Calculator
-              if (_selectedCalculator == 'tip') ...[
-                TextField(
-                  controller: _billAmountController,
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: 'Enter Bill Amount',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                SizedBox(height: 16),
-                TextField(
-                  controller: _tipPercentageController,
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: 'Enter Tip Percentage',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _calculateTip,
-                  child: Text('Calculate Tip'),
-                ),
-                SizedBox(height: 20),
-                if (_totalTip > 0) ...[
-                  Text(
-                    'Total Tip: \$${_totalTip.toStringAsFixed(2)}',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                ]
-              ],
-            ],
+        margin: EdgeInsets.all(8),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),
