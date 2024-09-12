@@ -48,10 +48,6 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
   final TextEditingController _distanceController = TextEditingController();
   final TextEditingController _fuelConsumedController = TextEditingController();
 
-  // Controllers for Discount Calculator
-  final TextEditingController _originalPriceController = TextEditingController();
-  final TextEditingController _discountPercentageController = TextEditingController();
-
   // Methods for showing calculators
   void _showCalculatorDialog(String calculator) {
     setState(() {
@@ -72,8 +68,6 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
       _showTemperatureConverterDialog();
     } else if (calculator == 'fuel') {
       _showFuelEfficiencyDialog();
-    } else if (calculator == 'discount') {
-      _showDiscountDialog();
     }
   }
 
@@ -298,57 +292,6 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
     }
   }
 
-  // Discount Calculator Dialog
-  void _showDiscountDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Discount Calculator'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _originalPriceController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter Original Price'),
-              ),
-              SizedBox(height: 8),
-              TextField(
-                controller: _discountPercentageController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter Discount Percentage'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final originalPrice = double.tryParse(_originalPriceController.text);
-                final discountPercentage = double.tryParse(_discountPercentageController.text);
-
-                if (originalPrice != null && discountPercentage != null) {
-                  final discountAmount = originalPrice * (discountPercentage / 100);
-                  final discountedPrice = originalPrice - discountAmount;
-                  Navigator.of(context).pop(); // Close the dialog first
-                  _showResultDialog('Discount Amount: ${discountAmount.toStringAsFixed(2)}, Discounted Price: ${discountedPrice.toStringAsFixed(2)}');
-                } else {
-                  Navigator.of(context).pop(); // Close the dialog first
-                  _showResultDialog('Invalid input');
-                }
-              },
-              child: Text('Calculate'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   // Common Result Dialog
   void _showResultDialog(String result) {
     showDialog(
@@ -533,7 +476,6 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
           _buildCalculatorButton('Quadratic Solver', 'quadratic'),
           _buildCalculatorButton('Temperature Converter', 'temperature'),
           _buildCalculatorButton('Fuel Efficiency', 'fuel'),
-          _buildCalculatorButton('Discount Calculator', 'discount'),
         ],
       ),
     );
