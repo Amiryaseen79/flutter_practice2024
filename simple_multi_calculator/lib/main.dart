@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
-import 'dart:math'; // Import for square root in quadratic calculator
+import 'dart:math' as math;
+import 'package:intl/intl.dart';
 
 void main() {
-  runApp(MultiCalculator());
+  runApp(MyApp());
 }
 
-class MultiCalculator extends StatelessWidget {
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Multi Calculator',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
       home: MultiCalculatorScreen(),
-      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -25,57 +21,30 @@ class MultiCalculatorScreen extends StatefulWidget {
 }
 
 class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
-  String _selectedCalculator = '';
-
-  // Controllers for existing calculators (BMI, Age, Tip, Currency)
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
-  final TextEditingController _billAmountController = TextEditingController();
-  final TextEditingController _tipPercentageController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
+  final TextEditingController _tipAmountController = TextEditingController();
+  final TextEditingController _totalBillController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
-
-  // Controllers for Quadratic Equation Calculator
+  final TextEditingController _currencyRateController = TextEditingController();
   final TextEditingController _aController = TextEditingController();
   final TextEditingController _bController = TextEditingController();
   final TextEditingController _cController = TextEditingController();
-
-  // Controllers for Temperature Converter
   final TextEditingController _temperatureController = TextEditingController();
-  String _selectedTemperatureFrom = 'Celsius';
-  String _selectedTemperatureTo = 'Fahrenheit';
-
-  // Controllers for Fuel Efficiency Calculator
   final TextEditingController _distanceController = TextEditingController();
   final TextEditingController _fuelConsumedController = TextEditingController();
-
-  // Controllers for Discount Calculator
   final TextEditingController _originalPriceController = TextEditingController();
   final TextEditingController _discountPercentageController = TextEditingController();
+  final TextEditingController _speedController = TextEditingController();
+  final TextEditingController _distanceSDTController = TextEditingController();
+  final TextEditingController _timeController = TextEditingController();
 
-  // Methods for showing calculators
-  void _showCalculatorDialog(String calculator) {
-    setState(() {
-      _selectedCalculator = calculator;
-    });
-
-    if (calculator == 'bmi') {
-      _showBMIDialog();
-    } else if (calculator == 'age') {
-      _showAgeDialog();
-    } else if (calculator == 'tip') {
-      _showTipDialog();
-    } else if (calculator == 'currency') {
-      _showCurrencyConverterDialog();
-    } else if (calculator == 'quadratic') {
-      _showQuadraticDialog();
-    } else if (calculator == 'temperature') {
-      _showTemperatureConverterDialog();
-    } else if (calculator == 'fuel') {
-      _showFuelEfficiencyDialog();
-    } else if (calculator == 'discount') {
-      _showDiscountDialog();
-    }
-  }
+  String _selectedTemperatureFrom = 'Celsius';
+  String _selectedTemperatureTo = 'Celsius';
+  String _selectedCalculation = 'Speed';
+  List<String> _todoList = [];
+  List<bool> _completedList = [];
 
   // BMI Calculator Dialog
   void _showBMIDialog() {
@@ -89,14 +58,13 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
             children: [
               TextField(
                 controller: _heightController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter Height (m)'),
+                decoration: InputDecoration(labelText: 'Height (cm)'),
+                keyboardType: TextInputType.number,
               ),
-              SizedBox(height: 8),
               TextField(
                 controller: _weightController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter Weight (kg)'),
+                decoration: InputDecoration(labelText: 'Weight (kg)'),
+                keyboardType: TextInputType.number,
               ),
             ],
           ),
@@ -107,17 +75,10 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                final height = double.tryParse(_heightController.text);
-                final weight = double.tryParse(_weightController.text);
-
-                if (height != null && weight != null && height > 0) {
-                  final bmi = weight / (height * height);
-                  Navigator.of(context).pop(); // Close the dialog first
-                  _showResultDialog('BMI: ${bmi.toStringAsFixed(2)}');
-                } else {
-                  Navigator.of(context).pop(); // Close the dialog first
-                  _showResultDialog('Invalid input');
-                }
+                double height = double.parse(_heightController.text) / 100; // Convert cm to meters
+                double weight = double.parse(_weightController.text);
+                double bmi = weight / (height * height);
+                _showResultDialog('BMI: ${bmi.toStringAsFixed(2)}');
               },
               child: Text('Calculate'),
             ),
@@ -134,7 +95,77 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
       builder: (context) {
         return AlertDialog(
           title: Text('Age Calculator'),
-          content: Text('Age calculator will be implemented here.'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                onPressed: () => _selectDate(context),
+                child: Text(_selectedDate == null
+                    ? 'Select Date of Birth'
+                    : DateFormat('yyyy-MM-dd').format(_selectedDate!)),
+              ),
+              if (_selectedDate != null)
+                Text(
+                  'Selected Date: ${DateFormat('yyyy-MM-dd').format(_selectedDate!)}',
+                  style: TextStyle(fontSize: 16),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (_selectedDate != null) {
+                  int age = _calculateAge(_selectedDate!);
+                  _showResultDialog('Age: $age');
+                } else {
+                  _showResultDialog('Please select a date of birth.');
+                }
+              },
+              child: Text('Calculate'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  DateTime? _selectedDate;
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+
+    if (pickedDate != null && pickedDate != _selectedDate) {
+      setState(() {
+        _selectedDate = pickedDate;
+      });
+    }
+  }
+
+  int _calculateAge(DateTime birthDate) {
+    final now = DateTime.now();
+    int age = now.year - birthDate.year;
+    if (now.month < birthDate.month || (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  void _showResultDialog(String result) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Result'),
+          content: Text(result),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -145,6 +176,7 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
       },
     );
   }
+
 
   // Tip Calculator Dialog
   void _showTipDialog() {
@@ -157,15 +189,14 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                controller: _billAmountController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter Bill Amount'),
+                controller: _totalBillController,
+                decoration: InputDecoration(labelText: 'Total Bill Amount'),
+                keyboardType: TextInputType.number,
               ),
-              SizedBox(height: 8),
               TextField(
-                controller: _tipPercentageController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter Tip Percentage'),
+                controller: _tipAmountController,
+                decoration: InputDecoration(labelText: 'Tip Percentage'),
+                keyboardType: TextInputType.number,
               ),
             ],
           ),
@@ -176,18 +207,10 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                final billAmount = double.tryParse(_billAmountController.text);
-                final tipPercentage = double.tryParse(_tipPercentageController.text);
-
-                if (billAmount != null && tipPercentage != null) {
-                  final tip = billAmount * (tipPercentage / 100);
-                  final totalAmount = billAmount + tip;
-                  Navigator.of(context).pop(); // Close the dialog first
-                  _showResultDialog('Tip: ${tip.toStringAsFixed(2)}, Total: ${totalAmount.toStringAsFixed(2)}');
-                } else {
-                  Navigator.of(context).pop(); // Close the dialog first
-                  _showResultDialog('Invalid input');
-                }
+                double totalBill = double.parse(_totalBillController.text);
+                double tipPercentage = double.parse(_tipAmountController.text);
+                double tipAmount = totalBill * (tipPercentage / 100);
+                _showResultDialog('Tip Amount: \$${tipAmount.toStringAsFixed(2)}');
               },
               child: Text('Calculate'),
             ),
@@ -209,11 +232,14 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
             children: [
               TextField(
                 controller: _amountController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter Amount'),
+                decoration: InputDecoration(labelText: 'Amount'),
+                keyboardType: TextInputType.number,
               ),
-              SizedBox(height: 16),
-              Text('Conversion logic can be implemented here.'),
+              TextField(
+                controller: _currencyRateController,
+                decoration: InputDecoration(labelText: 'Currency Rate'),
+                keyboardType: TextInputType.number,
+              ),
             ],
           ),
           actions: [
@@ -223,8 +249,10 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                // Currency conversion logic will go here
-                Navigator.of(context).pop();
+                double amount = double.parse(_amountController.text);
+                double currencyRate = double.parse(_currencyRateController.text);
+                double convertedAmount = amount * currencyRate;
+                _showResultDialog('Converted Amount: \$${convertedAmount.toStringAsFixed(2)}');
               },
               child: Text('Convert'),
             ),
@@ -234,7 +262,7 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
     );
   }
 
-  // Quadratic Equation Solver
+  // Quadratic Equation Solver Dialog
   void _showQuadraticDialog() {
     showDialog(
       context: context,
@@ -246,18 +274,18 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
             children: [
               TextField(
                 controller: _aController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter value of a'),
+                decoration: InputDecoration(labelText: 'a'),
+                keyboardType: TextInputType.number,
               ),
               TextField(
                 controller: _bController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter value of b'),
+                decoration: InputDecoration(labelText: 'b'),
+                keyboardType: TextInputType.number,
               ),
               TextField(
                 controller: _cController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter value of c'),
+                decoration: InputDecoration(labelText: 'c'),
+                keyboardType: TextInputType.number,
               ),
             ],
           ),
@@ -267,7 +295,22 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
               child: Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: _solveQuadratic,
+              onPressed: () {
+                double a = double.parse(_aController.text);
+                double b = double.parse(_bController.text);
+                double c = double.parse(_cController.text);
+                double discriminant = b * b - 4 * a * c;
+                if (discriminant > 0) {
+                  double root1 = (-b + math.sqrt(discriminant)) / (2 * a);
+                  double root2 = (-b - math.sqrt(discriminant)) / (2 * a);
+                  _showResultDialog('Roots: $root1 and $root2');
+                } else if (discriminant == 0) {
+                  double root = -b / (2 * a);
+                  _showResultDialog('Root: $root');
+                } else {
+                  _showResultDialog('No Real Roots');
+                }
+              },
               child: Text('Solve'),
             ),
           ],
@@ -276,30 +319,7 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
     );
   }
 
-  void _solveQuadratic() {
-    final double? a = double.tryParse(_aController.text);
-    final double? b = double.tryParse(_bController.text);
-    final double? c = double.tryParse(_cController.text);
-
-    if (a != null && b != null && c != null && a != 0) {
-      final double discriminant = (b * b) - (4 * a * c);
-      if (discriminant > 0) {
-        double x1 = (-b + sqrt(discriminant)) / (2 * a);
-        double x2 = (-b - sqrt(discriminant)) / (2 * a);
-        Navigator.of(context).pop(); // Close the dialog first
-        _showResultDialog('Roots are: x1 = ${x1.toStringAsFixed(2)}, x2 = ${x2.toStringAsFixed(2)}');
-      } else if (discriminant == 0) {
-        double x = -b / (2 * a);
-        Navigator.of(context).pop(); // Close the dialog first
-        _showResultDialog('Root is: x = ${x.toStringAsFixed(2)}');
-      } else {
-        Navigator.of(context).pop(); // Close the dialog first
-        _showResultDialog('No real roots.');
-      }
-    }
-  }
-
-  // Temperature Converter
+  // Temperature Converter Dialog
   void _showTemperatureConverterDialog() {
     showDialog(
       context: context,
@@ -311,8 +331,8 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
             children: [
               TextField(
                 controller: _temperatureController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter Temperature'),
+                decoration: InputDecoration(labelText: 'Temperature'),
+                keyboardType: TextInputType.number,
               ),
               DropdownButton<String>(
                 value: _selectedTemperatureFrom,
@@ -321,7 +341,7 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
                     _selectedTemperatureFrom = value!;
                   });
                 },
-                items: ['Celsius', 'Fahrenheit', 'Kelvin'].map((String value) {
+                items: ['Celsius', 'Fahrenheit'].map((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
                     child: Text(value),
@@ -335,7 +355,7 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
                     _selectedTemperatureTo = value!;
                   });
                 },
-                items: ['Celsius', 'Fahrenheit', 'Kelvin'].map((String value) {
+                items: ['Celsius', 'Fahrenheit'].map((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
                     child: Text(value),
@@ -351,7 +371,15 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                _convertTemperature();
+                double temperature = double.parse(_temperatureController.text);
+                if (_selectedTemperatureFrom == 'Celsius' &&
+                    _selectedTemperatureTo == 'Fahrenheit') {
+                  temperature = temperature * 9 / 5 + 32;
+                } else if (_selectedTemperatureFrom == 'Fahrenheit' &&
+                    _selectedTemperatureTo == 'Celsius') {
+                  temperature = (temperature - 32) * 5 / 9;
+                }
+                _showResultDialog('Converted Temperature: ${temperature.toStringAsFixed(2)} $_selectedTemperatureTo');
               },
               child: Text('Convert'),
             ),
@@ -361,49 +389,25 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
     );
   }
 
-  void _convertTemperature() {
-    final double? temperature = double.tryParse(_temperatureController.text);
-
-    if (temperature != null) {
-      double convertedTemp = 0.0;
-
-      if (_selectedTemperatureFrom == 'Celsius' && _selectedTemperatureTo == 'Fahrenheit') {
-        convertedTemp = (temperature * 9 / 5) + 32;
-      } else if (_selectedTemperatureFrom == 'Fahrenheit' && _selectedTemperatureTo == 'Celsius') {
-        convertedTemp = (temperature - 32) * 5 / 9;
-      } else if (_selectedTemperatureFrom == 'Celsius' && _selectedTemperatureTo == 'Kelvin') {
-        convertedTemp = temperature + 273.15;
-      } else if (_selectedTemperatureFrom == 'Kelvin' && _selectedTemperatureTo == 'Celsius') {
-        convertedTemp = temperature - 273.15;
-      }
-
-      Navigator.of(context).pop(); // Close the dialog first
-      _showResultDialog('Converted Temperature: ${convertedTemp.toStringAsFixed(2)}');
-    } else {
-      Navigator.of(context).pop(); // Close the dialog first
-      _showResultDialog('Invalid input');
-    }
-  }
-
-  // Fuel Efficiency Calculator
+  // Fuel Efficiency Dialog
   void _showFuelEfficiencyDialog() {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Fuel Efficiency Calculator'),
+          title: Text('Fuel Efficiency'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: _distanceController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter Distance (km)'),
+                decoration: InputDecoration(labelText: 'Distance (km)'),
+                keyboardType: TextInputType.number,
               ),
               TextField(
                 controller: _fuelConsumedController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter Fuel Consumed (liters)'),
+                decoration: InputDecoration(labelText: 'Fuel Consumed (liters)'),
+                keyboardType: TextInputType.number,
               ),
             ],
           ),
@@ -414,17 +418,10 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                final distance = double.tryParse(_distanceController.text);
-                final fuelConsumed = double.tryParse(_fuelConsumedController.text);
-
-                if (distance != null && fuelConsumed != null && fuelConsumed > 0) {
-                  final efficiency = distance / fuelConsumed;
-                  Navigator.of(context).pop(); // Close the dialog first
-                  _showResultDialog('Fuel Efficiency: ${efficiency.toStringAsFixed(2)} km/l');
-                } else {
-                  Navigator.of(context).pop(); // Close the dialog first
-                  _showResultDialog('Invalid input');
-                }
+                double distance = double.parse(_distanceController.text);
+                double fuelConsumed = double.parse(_fuelConsumedController.text);
+                double efficiency = distance / fuelConsumed;
+                _showResultDialog('Fuel Efficiency: ${efficiency.toStringAsFixed(2)} km/l');
               },
               child: Text('Calculate'),
             ),
@@ -446,13 +443,13 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
             children: [
               TextField(
                 controller: _originalPriceController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter Original Price'),
+                decoration: InputDecoration(labelText: 'Original Price'),
+                keyboardType: TextInputType.number,
               ),
               TextField(
                 controller: _discountPercentageController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Enter Discount Percentage'),
+                decoration: InputDecoration(labelText: 'Discount Percentage'),
+                keyboardType: TextInputType.number,
               ),
             ],
           ),
@@ -463,17 +460,163 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                final originalPrice = double.tryParse(_originalPriceController.text);
-                final discountPercentage = double.tryParse(_discountPercentageController.text);
+                double originalPrice = double.parse(_originalPriceController.text);
+                double discountPercentage = double.parse(_discountPercentageController.text);
+                double discountAmount = originalPrice * (discountPercentage / 100);
+                double finalPrice = originalPrice - discountAmount;
+                _showResultDialog('Final Price: \$${finalPrice.toStringAsFixed(2)}');
+              },
+              child: Text('Calculate'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-                if (originalPrice != null && discountPercentage != null && discountPercentage >= 0 && discountPercentage <= 100) {
-                  final discountAmount = (discountPercentage / 100) * originalPrice;
-                  final finalPrice = originalPrice - discountAmount;
-                  Navigator.of(context).pop(); // Close the dialog first
-                  _showResultDialog('Discounted Price: ${finalPrice.toStringAsFixed(2)}');
-                } else {
-                  Navigator.of(context).pop(); // Close the dialog first
-                  _showResultDialog('Invalid input');
+  // To-Do List Dialog
+  void _showTodoListDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('To-Do List'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                onSubmitted: (value) {
+                  if (value.isNotEmpty) {
+                    setState(() {
+                      _todoList.add(value);
+                      _completedList.add(false);
+                    });
+                    Navigator.of(context).pop();
+                  }
+                },
+                decoration: InputDecoration(labelText: 'New Task'),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _todoList.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      leading: Checkbox(
+                        value: _completedList[index],
+                        onChanged: (value) {
+                          setState(() {
+                            _completedList[index] = value!;
+                          });
+                        },
+                      ),
+                      title: Text(_todoList[index]),
+                      trailing: IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () {
+                          setState(() {
+                            _todoList.removeAt(index);
+                            _completedList.removeAt(index);
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Speed, Distance, Time Calculator Dialog
+  void _showSpeedDistanceTimeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Speed/Distance/Time Calculator'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButton<String>(
+                value: _selectedCalculation,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCalculation = value!;
+                  });
+                },
+                items: ['Speed', 'Distance', 'Time'].map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+              ),
+              if (_selectedCalculation == 'Speed') ...[
+                TextField(
+                  controller: _distanceSDTController,
+                  decoration: InputDecoration(labelText: 'Distance (km)'),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: _timeController,
+                  decoration: InputDecoration(labelText: 'Time (hours)'),
+                  keyboardType: TextInputType.number,
+                ),
+              ] else if (_selectedCalculation == 'Distance') ...[
+                TextField(
+                  controller: _speedController,
+                  decoration: InputDecoration(labelText: 'Speed (km/h)'),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: _timeController,
+                  decoration: InputDecoration(labelText: 'Time (hours)'),
+                  keyboardType: TextInputType.number,
+                ),
+              ] else if (_selectedCalculation == 'Time') ...[
+                TextField(
+                  controller: _speedController,
+                  decoration: InputDecoration(labelText: 'Speed (km/h)'),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: _distanceSDTController,
+                  decoration: InputDecoration(labelText: 'Distance (km)'),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                double distance = double.tryParse(_distanceSDTController.text) ?? 0;
+                double speed = double.tryParse(_speedController.text) ?? 0;
+                double time = double.tryParse(_timeController.text) ?? 0;
+
+                double result;
+                if (_selectedCalculation == 'Speed') {
+                  result = distance / time;
+                  _showResultDialog('Speed: ${result.toStringAsFixed(2)} km/h');
+                } else if (_selectedCalculation == 'Distance') {
+                  result = speed * time;
+                  _showResultDialog('Distance: ${result.toStringAsFixed(2)} km');
+                } else if (_selectedCalculation == 'Time') {
+                  result = distance / speed;
+                  _showResultDialog('Time: ${result.toStringAsFixed(2)} hours');
                 }
               },
               child: Text('Calculate'),
@@ -484,8 +627,8 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
     );
   }
 
-  // Result Dialog
-  void _showResultDialog(String result) {
+  // Common Result Dialog
+  void _showAgeResultDialog(String result) {
     showDialog(
       context: context,
       builder: (context) {
@@ -503,6 +646,44 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
     );
   }
 
+  // Show Calculator Dialog
+  void _showCalculatorDialog(String calculatorType) {
+    switch (calculatorType) {
+      case 'bmi':
+        _showBMIDialog();
+        break;
+      case 'age':
+        _showAgeDialog();
+        break;
+      case 'tip':
+        _showTipDialog();
+        break;
+      case 'currency':
+        _showCurrencyConverterDialog();
+        break;
+      case 'quadratic':
+        _showQuadraticDialog();
+        break;
+      case 'temperature':
+        _showTemperatureConverterDialog();
+        break;
+      case 'fuel':
+        _showFuelEfficiencyDialog();
+        break;
+      case 'discount':
+        _showDiscountDialog();
+        break;
+      case 'todo':
+        _showTodoListDialog();
+        break;
+      case 'sdt':
+        _showSpeedDistanceTimeDialog();
+        break;
+      default:
+        _showResultDialog('Unknown calculator type');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -512,35 +693,30 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
       body: GridView.count(
         crossAxisCount: 2,
         children: [
-          _buildCalculatorButton('BMI', Colors.blue, () => _showCalculatorDialog('bmi')),
-          _buildCalculatorButton('Age', Colors.red, () => _showCalculatorDialog('age')),
-          _buildCalculatorButton('Tip', Colors.green, () => _showCalculatorDialog('tip')),
-          _buildCalculatorButton('Currency', Colors.purple, () => _showCalculatorDialog('currency')),
-          _buildCalculatorButton('Quadratic', Colors.orange, () => _showCalculatorDialog('quadratic')),
-          _buildCalculatorButton('Temperature', Colors.teal, () => _showCalculatorDialog('temperature')),
-          _buildCalculatorButton('Fuel', Colors.pink, () => _showCalculatorDialog('fuel')),
-          _buildCalculatorButton('Discount', Colors.indigo, () => _showCalculatorDialog('discount')),
+          _buildCalculatorButton('BMI', 'bmi'),
+          _buildCalculatorButton('Age', 'age'),
+          _buildCalculatorButton('Tip', 'tip'),
+          _buildCalculatorButton('Currency', 'currency'),
+          _buildCalculatorButton('Quadratic', 'quadratic'),
+          _buildCalculatorButton('Temperature', 'temperature'),
+          _buildCalculatorButton('Fuel', 'fuel'),
+          _buildCalculatorButton('Discount', 'discount'),
+          _buildCalculatorButton('To-Do List', 'todo'),
+          _buildCalculatorButton('Speed/Distance/Time', 'sdt'),
         ],
       ),
     );
   }
 
-  // Method to build circular calculator buttons with gradient
-  Widget _buildCalculatorButton(String text, Color color, VoidCallback onPressed) {
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          shape: CircleBorder(),
-          minimumSize: Size(80, 80),
-          padding: EdgeInsets.all(8),
-          backgroundColor: color,
-        ),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 14, color: Colors.white),
+  Widget _buildCalculatorButton(String label, String calculatorType) {
+    return Card(
+      child: InkWell(
+        onTap: () => _showCalculatorDialog(calculatorType),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 20),
+          ),
         ),
       ),
     );
