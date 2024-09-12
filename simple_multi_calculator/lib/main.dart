@@ -481,49 +481,56 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
       builder: (context) {
         return AlertDialog(
           title: Text('To-Do List'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                onSubmitted: (value) {
-                  if (value.isNotEmpty) {
-                    setState(() {
-                      _todoList.add(value);
-                      _completedList.add(false);
-                    });
-                    Navigator.of(context).pop();
-                  }
-                },
-                decoration: InputDecoration(labelText: 'New Task'),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _todoList.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      leading: Checkbox(
-                        value: _completedList[index],
-                        onChanged: (value) {
-                          setState(() {
-                            _completedList[index] = value!;
-                          });
-                        },
-                      ),
-                      title: Text(_todoList[index]),
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () {
-                          setState(() {
-                            _todoList.removeAt(index);
-                            _completedList.removeAt(index);
-                          });
-                        },
-                      ),
-                    );
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  onSubmitted: (value) {
+                    if (value.isNotEmpty) {
+                      setState(() {
+                        _todoList.add(value);
+                        _completedList.add(false);
+                      });
+                      Navigator.of(context).pop();
+                    }
                   },
+                  decoration: InputDecoration(labelText: 'New Task'),
                 ),
-              ),
-            ],
+                SizedBox(height: 10),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: 200, // Adjust the height as needed
+                  ),
+                  child: ListView.builder(
+                    itemCount: _todoList.length,
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        leading: Checkbox(
+                          value: _completedList[index],
+                          onChanged: (value) {
+                            setState(() {
+                              _completedList[index] = value!;
+                            });
+                          },
+                        ),
+                        title: Text(_todoList[index]),
+                        trailing: IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () {
+                            setState(() {
+                              _todoList.removeAt(index);
+                              _completedList.removeAt(index);
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -535,6 +542,7 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
       },
     );
   }
+
 
   // Speed, Distance, Time Calculator Dialog
   void _showSpeedDistanceTimeDialog() {
@@ -710,15 +718,24 @@ class _MultiCalculatorScreenState extends State<MultiCalculatorScreen> {
 
   Widget _buildCalculatorButton(String label, String calculatorType) {
     return Card(
+      elevation: 4, // Add elevation if desired for shadow effect
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8), // Rounded corners
+      ),
       child: InkWell(
         onTap: () => _showCalculatorDialog(calculatorType),
-        child: Center(
+        child: Container(
+          width: 10, // Fixed width for button
+          height: 6, // Fixed height for button
+          alignment: Alignment.center,
           child: Text(
             label,
-            style: TextStyle(fontSize: 20),
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14), // Smaller text size
           ),
         ),
       ),
     );
   }
+
 }
