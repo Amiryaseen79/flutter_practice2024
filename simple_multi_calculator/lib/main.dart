@@ -12,6 +12,7 @@ class MyApp extends StatelessWidget {
       title: 'Multi Calculator',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.white,
       ),
       home: MultiCalculator(),
     );
@@ -26,7 +27,7 @@ class MultiCalculator extends StatefulWidget {
 class _MultiCalculatorState extends State<MultiCalculator> {
   final _bmiWeightController = TextEditingController();
   final _bmiHeightController = TextEditingController();
-  final _ageController = TextEditingController();
+  DateTime _selectedDate = DateTime.now();
   final _tipAmountController = TextEditingController();
   final _tipPercentageController = TextEditingController();
   final _currencyAmountController = TextEditingController();
@@ -89,34 +90,24 @@ class _MultiCalculatorState extends State<MultiCalculator> {
 
   // Age Calculator Dialog
   void _showAgeDialog() {
-    showDialog(
+    showDatePicker(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Age Calculator'),
-          content: TextField(
-            controller: _ageController,
-            decoration: InputDecoration(labelText: 'Enter your birth year'),
-            keyboardType: TextInputType.number,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                int birthYear = int.parse(_ageController.text);
-                int currentYear = DateTime.now().year;
-                int age = currentYear - birthYear;
-                _showResultDialog('Your age is: $age');
-              },
-              child: Text('Calculate'),
-            ),
-          ],
-        );
-      },
-    );
+      initialDate: _selectedDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    ).then((selectedDate) {
+      if (selectedDate != null && selectedDate != _selectedDate) {
+        setState(() {
+          _selectedDate = selectedDate;
+        });
+        int age = DateTime.now().year - selectedDate.year;
+        if (DateTime.now().month < selectedDate.month ||
+            (DateTime.now().month == selectedDate.month && DateTime.now().day < selectedDate.day)) {
+          age--;
+        }
+        _showResultDialog('Your age is: $age');
+      }
+    });
   }
 
   // Tip Calculator Dialog
@@ -309,8 +300,8 @@ class _MultiCalculatorState extends State<MultiCalculator> {
               onPressed: () {
                 double distance = double.parse(_distanceFuelController.text);
                 double fuel = double.parse(_fuelConsumedController.text);
-                double efficiency = distance / fuel;
-                _showResultDialog('Fuel Efficiency: ${efficiency.toStringAsFixed(2)} km/l');
+                double average = distance / fuel;
+                _showResultDialog('Fuel Average: ${average.toStringAsFixed(2)} km/l');
               },
               child: Text('Calculate'),
             ),
@@ -351,9 +342,9 @@ class _MultiCalculatorState extends State<MultiCalculator> {
               onPressed: () {
                 double originalPrice = double.parse(_originalPriceController.text);
                 double discountPercentage = double.parse(_discountPercentageController.text);
-                double discountAmount = originalPrice * (discountPercentage / 100);
-                double finalPrice = originalPrice - discountAmount;
-                _showResultDialog('Final Price: \$${finalPrice.toStringAsFixed(2)}');
+                double discount = (originalPrice * discountPercentage) / 100;
+                double finalPrice = originalPrice - discount;
+                _showResultDialog('Final Price after Discount: \$${finalPrice.toStringAsFixed(2)}');
               },
               child: Text('Calculate'),
             ),
@@ -363,35 +354,16 @@ class _MultiCalculatorState extends State<MultiCalculator> {
     );
   }
 
-  // Speed/Distance/Time Calculator Dialog
-  void _showSpeedDistanceTimeDialog() {
+  // Speed, Distance, Time Calculator Dialog
+  void _showSDTDialog() {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Speed/Distance/Time Calculator'),
+          title: Text('Speed, Distance, Time Calculator'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              DropdownButton<String>(
-                value: _selectedCalculation,
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedCalculation = newValue!;
-                  });
-                },
-                items: <String>['Speed', 'Distance', 'Time'].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-              ),
-              TextField(
-                controller: _speedController,
-                decoration: InputDecoration(labelText: 'Speed (km/h)'),
-                keyboardType: TextInputType.number,
-              ),
               TextField(
                 controller: _distanceSDTController,
                 decoration: InputDecoration(labelText: 'Distance (km)'),
@@ -399,7 +371,12 @@ class _MultiCalculatorState extends State<MultiCalculator> {
               ),
               TextField(
                 controller: _timeController,
-                decoration: InputDecoration(labelText: 'Time (h)'),
+                decoration: InputDecoration(labelText: 'Time (hours)'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: _speedController,
+                decoration: InputDecoration(labelText: 'Speed (km/h)'),
                 keyboardType: TextInputType.number,
               ),
             ],
@@ -411,19 +388,21 @@ class _MultiCalculatorState extends State<MultiCalculator> {
             ),
             ElevatedButton(
               onPressed: () {
-                double speed = double.parse(_speedController.text);
-                double distance = double.parse(_distanceSDTController.text);
-                double time = double.parse(_timeController.text);
+                double distance = double.tryParse(_distanceSDTController.text) ?? 0;
+                double time = double.tryParse(_timeController.text) ?? 0;
+                double speed = double.tryParse(_speedController.text) ?? 0;
 
-                if (_selectedCalculation == 'Speed') {
+                if (distance != 0 && time != 0) {
                   speed = distance / time;
-                  _showResultDialog('Calculated Speed: ${speed.toStringAsFixed(2)} km/h');
-                } else if (_selectedCalculation == 'Distance') {
+                  _showResultDialog('Speed: ${speed.toStringAsFixed(2)} km/h');
+                } else if (speed != 0 && time != 0) {
                   distance = speed * time;
-                  _showResultDialog('Calculated Distance: ${distance.toStringAsFixed(2)} km');
-                } else if (_selectedCalculation == 'Time') {
+                  _showResultDialog('Distance: ${distance.toStringAsFixed(2)} km');
+                } else if (speed != 0 && distance != 0) {
                   time = distance / speed;
-                  _showResultDialog('Calculated Time: ${time.toStringAsFixed(2)} h');
+                  _showResultDialog('Time: ${time.toStringAsFixed(2)} hours');
+                } else {
+                  _showResultDialog('Please enter at least two values.');
                 }
               },
               child: Text('Calculate'),
@@ -435,65 +414,49 @@ class _MultiCalculatorState extends State<MultiCalculator> {
   }
 
   // To-Do List Dialog
-  void _showTodoListDialog() {
+  void _showTodoDialog() {
     showDialog(
       context: context,
       builder: (context) {
-        String newTask = '';
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text('To-Do List'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    onChanged: (value) {
-                      newTask = value;
-                    },
-                    decoration: InputDecoration(labelText: 'New Task'),
-                  ),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _todoList.length,
-                    itemBuilder: (context, index) {
-                      return CheckboxListTile(
-                        title: Text(_todoList[index]),
-                        value: _completedList[index],
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _completedList[index] = value!;
-                          });
-                        },
-                      );
-                    },
-                  ),
-                ],
+        TextEditingController taskController = TextEditingController();
+        return AlertDialog(
+          title: Text('To-Do List'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: taskController,
+                decoration: InputDecoration(labelText: 'Enter Task'),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _todoList.add(newTask);
-                      _completedList.add(false);
-                    });
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('Add Task'),
-                ),
-              ],
-            );
-          },
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                String task = taskController.text;
+                if (task.isNotEmpty) {
+                  setState(() {
+                    _todoList.add(task);
+                    _completedList.add(false);
+                  });
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Text('Add'),
+            ),
+          ],
         );
       },
     );
   }
 
-  // Function to show results in dialog
+  // Show Result Dialog
   void _showResultDialog(String result) {
     showDialog(
       context: context,
@@ -502,7 +465,7 @@ class _MultiCalculatorState extends State<MultiCalculator> {
           title: Text('Result'),
           content: Text(result),
           actions: [
-            ElevatedButton(
+            TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text('OK'),
             ),
@@ -512,75 +475,103 @@ class _MultiCalculatorState extends State<MultiCalculator> {
     );
   }
 
-  // Main calculator grid layout
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Multi Calculator'),
       ),
-      body: GridView.count(
-        crossAxisCount: 2,
-        padding: EdgeInsets.all(16),
-        children: [
-          _buildCalculatorButton('BMI', 'bmi'),
-          _buildCalculatorButton('Age', 'age'),
-          _buildCalculatorButton('Tip', 'tip'),
-          _buildCalculatorButton('Currency', 'currency'),
-          _buildCalculatorButton('Quadratic', 'quadratic'),
-          _buildCalculatorButton('Temperature', 'temperature'),
-          _buildCalculatorButton('Fuel Efficiency', 'fuel'),
-          _buildCalculatorButton('Discount', 'discount'),
-          _buildCalculatorButton('Speed/Distance/Time', 'speed_distance_time'),
-          _buildCalculatorButton('To-Do List', 'todo'),
-        ],
+      body: SingleChildScrollView(
+        child: Container(
+          padding: EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue, Colors.purple],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            children: <Widget>[
+              _buildCalculatorButton('BMI Calculator', _showBMIDialog),
+              _buildCalculatorButton('Age Calculator', _showAgeDialog),
+              _buildCalculatorButton('Tip Calculator', _showTipDialog),
+              _buildCalculatorButton('Currency Converter', _showCurrencyConverterDialog),
+              _buildCalculatorButton('Quadratic Equation Solver', _showQuadraticDialog),
+              _buildCalculatorButton('Temperature Converter', _showTemperatureConverterDialog),
+              _buildCalculatorButton('Fuel Average Calculator', _showFuelEfficiencyDialog),
+              _buildCalculatorButton('Discount Calculator', _showDiscountDialog),
+              _buildCalculatorButton('Speed, Distance, Time Calculator', _showSDTDialog),
+              _buildCalculatorButton('To-Do List', _showTodoDialog),
+              _buildTodoList(),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  // Button builder
-  Widget _buildCalculatorButton(String title, String type) {
-    return ElevatedButton(
-      onPressed: () => _showCalculatorDialog(type),
-      child: Text(title),
+  Widget _buildCalculatorButton(String title, VoidCallback onPressed) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 8.0),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          primary: Colors.transparent,
+          padding: EdgeInsets.all(16.0),
+          shape: CircleBorder(),
+          side: BorderSide(color: Colors.white, width: 2),
+          textStyle: TextStyle(fontSize: 16),
+          backgroundColor: Colors.transparent,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue, Colors.purple],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(title, style: TextStyle(color: Colors.white)),
+          ),
+        ),
+      ),
     );
   }
 
-  // Handle calculator dialog selection
-  void _showCalculatorDialog(String type) {
-    switch (type) {
-      case 'bmi':
-        _showBMIDialog();
-        break;
-      case 'age':
-        _showAgeDialog();
-        break;
-      case 'tip':
-        _showTipDialog();
-        break;
-      case 'currency':
-        _showCurrencyConverterDialog();
-        break;
-      case 'quadratic':
-        _showQuadraticDialog();
-        break;
-      case 'temperature':
-        _showTemperatureConverterDialog();
-        break;
-      case 'fuel':
-        _showFuelEfficiencyDialog();
-        break;
-      case 'discount':
-        _showDiscountDialog();
-        break;
-      case 'speed_distance_time':
-        _showSpeedDistanceTimeDialog();
-        break;
-      case 'todo':
-        _showTodoListDialog();
-        break;
-      default:
-        _showResultDialog('Unknown calculator type');
-    }
+  Widget _buildTodoList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: List.generate(
+        _todoList.length,
+            (index) => ListTile(
+          title: Text(
+            _todoList[index],
+            style: TextStyle(
+              decoration: _completedList[index] ? TextDecoration.lineThrough : null,
+            ),
+          ),
+          leading: Checkbox(
+            value: _completedList[index],
+            onChanged: (value) {
+              setState(() {
+                _completedList[index] = value ?? false;
+              });
+            },
+          ),
+          trailing: IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: () {
+              setState(() {
+                _todoList.removeAt(index);
+                _completedList.removeAt(index);
+              });
+            },
+          ),
+        ),
+      ),
+    );
   }
 }
