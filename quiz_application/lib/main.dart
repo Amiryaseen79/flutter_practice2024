@@ -22,7 +22,7 @@ class _QuizPageState extends State<QuizPage> {
   List<Icon> scoreKeeper = [];
   int score = 0;
   bool isQuizStarted = false;
-  int timer = 5;
+  int timer = 25;
   bool isTimeout = false;
   bool isQuizFinished = false;
 
@@ -64,7 +64,7 @@ class _QuizPageState extends State<QuizPage> {
   // Function to reset the timer
   void resetTimer() {
     setState(() {
-      timer = 5;
+      timer = 25;
       isTimeout = false;
       startTimer();
     });
@@ -116,7 +116,7 @@ class _QuizPageState extends State<QuizPage> {
       quizBrain.reset();
       scoreKeeper.clear();
       score = 0;
-      timer = 5;
+      timer = 25;
       isQuizStarted = false;
       isQuizFinished = false;
       isTimeout = false;
@@ -155,7 +155,7 @@ class _QuizPageState extends State<QuizPage> {
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Container(
-                        height: 70,
+                        height: 150,
                         child: ElevatedButton(
                           onPressed: () {
                             checkAnswer(true);
@@ -187,7 +187,7 @@ class _QuizPageState extends State<QuizPage> {
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Container(
-                        height: 70,
+                        height: 150,
                         child: ElevatedButton(
                           onPressed: () {
                             checkAnswer(false);
@@ -225,8 +225,8 @@ class _QuizPageState extends State<QuizPage> {
         )
             : Center(
           child: Container(
-            width: 120, // Adjusted width for a circular look
-            height: 120, // Adjusted height for a circular look
+            width: 220, // Adjusted width for a circular look
+            height: 220, // Adjusted height for a circular look
             child: ElevatedButton(
               onPressed: startQuiz,
               style: ElevatedButton.styleFrom(
