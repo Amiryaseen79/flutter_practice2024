@@ -24,7 +24,12 @@ class _QuizPageState extends State<QuizPage> {
   bool isQuizStarted = false;
   int timer = 5;
   bool isTimeout = false;
+  bool isQuizFinished = false;
 
+  // Cancel flag for timer
+  bool shouldCancelTimer = false;
+
+  // Function to check the answer and update the state
   void checkAnswer(bool userPickedAnswer) {
     bool correctAnswer = quizBrain.getAnswer();
     setState(() {
@@ -35,7 +40,10 @@ class _QuizPageState extends State<QuizPage> {
         scoreKeeper.add(Icon(Icons.close, color: Colors.red));
       }
 
+      // Check if quiz is finished
       if (quizBrain.isFinished()) {
+        isQuizFinished = true;
+        shouldCancelTimer = true; // Stop the timer
         showResult();
       } else {
         quizBrain.nextQuestion();
@@ -44,13 +52,16 @@ class _QuizPageState extends State<QuizPage> {
     });
   }
 
+  // Function to start the quiz
   void startQuiz() {
     setState(() {
       isQuizStarted = true;
+      shouldCancelTimer = false; // Reset cancel flag
       resetTimer();
     });
   }
 
+  // Function to reset the timer
   void resetTimer() {
     setState(() {
       timer = 5;
@@ -59,23 +70,28 @@ class _QuizPageState extends State<QuizPage> {
     });
   }
 
+  // Function to start the countdown timer
   void startTimer() {
     Future.delayed(Duration(seconds: 1), () {
-      setState(() {
-        if (timer > 0) {
-          timer--;
-          startTimer();
-        } else {
-          isTimeout = true;
-          checkAnswer(false); // Timeout counts as an incorrect answer
-        }
-      });
+      if (mounted && !shouldCancelTimer) {
+        setState(() {
+          if (timer > 0) {
+            timer--;
+            startTimer();
+          } else {
+            isTimeout = true;
+            checkAnswer(false); // Timeout counts as an incorrect answer
+          }
+        });
+      }
     });
   }
 
+  // Function to show the result dialog
   void showResult() {
     showDialog(
       context: context,
+      barrierDismissible: false, // Prevents the dialog from being dismissed without pressing the button
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text("Quiz Completed!"),
@@ -84,8 +100,8 @@ class _QuizPageState extends State<QuizPage> {
             TextButton(
               child: Text("Restart"),
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog first
-                resetQuiz(); // Reset the quiz state
+                Navigator.of(context).pop(); // Close the dialog
+                resetQuiz(); // Reset the quiz
               },
             ),
           ],
@@ -94,6 +110,7 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 
+  // Function to reset the quiz state
   void resetQuiz() {
     setState(() {
       quizBrain.reset();
@@ -101,6 +118,9 @@ class _QuizPageState extends State<QuizPage> {
       score = 0;
       timer = 5;
       isQuizStarted = false;
+      isQuizFinished = false;
+      isTimeout = false;
+      shouldCancelTimer = true; // Stop any ongoing timer before restarting
     });
   }
 
@@ -242,6 +262,7 @@ class _QuizPageState extends State<QuizPage> {
   }
 }
 
+// Quiz question model
 class Question {
   String questionText;
   bool questionAnswer;
@@ -249,6 +270,7 @@ class Question {
   Question(this.questionText, this.questionAnswer);
 }
 
+// Quiz logic and state management
 class QuizBrain {
   int _questionNumber = 0;
 
