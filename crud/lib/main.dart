@@ -8,7 +8,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SQLite CRUD',
+      title: 'SQLite CRUD with Gradient',
       debugShowCheckedModeBanner: false,
       home: HomePage(),
     );
@@ -24,17 +24,21 @@ class _HomePageState extends State<HomePage> {
   late Future<List<Item>> items;
   TextEditingController controller = TextEditingController();
   String name = "";
-  String searchQuery = "";
   int? curItemId;
   final formKey = GlobalKey<FormState>();
   late DatabaseHelper dbHelper;
-  List<Item> filteredItems = [];
 
   @override
   void initState() {
     super.initState();
     dbHelper = DatabaseHelper();
-    searchForItems();
+    refreshList();
+  }
+
+  refreshList() {
+    setState(() {
+      items = dbHelper.getItems();
+    });
   }
 
   clearName() {
@@ -51,17 +55,8 @@ class _HomePageState extends State<HomePage> {
         dbHelper.updateItem(Item(id: curItemId, name: name));
       }
       clearName();
-      searchForItems();
+      refreshList();
     }
-  }
-
-  void searchForItems() async {
-    if (searchQuery.isNotEmpty) {
-      filteredItems = await dbHelper.searchItems(searchQuery);
-    } else {
-      filteredItems = await dbHelper.getItems();
-    }
-    setState(() {});
   }
 
   form() {
@@ -77,34 +72,7 @@ class _HomePageState extends State<HomePage> {
               validator: (val) => val!.isEmpty ? 'Enter Name' : null,
               onSaved: (val) => name = val!,
             ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey,
-              ),
-              onPressed: validate,
-              child: Text(curItemId == null ? 'Add' : 'Update'),
-            ),
           ],
-        ),
-      ),
-    );
-  }
-
-  searchBar() {
-    return Padding(
-      padding: const EdgeInsets.all(15.0),
-      child: TextField(
-        onChanged: (value) {
-          setState(() {
-            searchQuery = value;
-          });
-          searchForItems();
-        },
-        decoration: InputDecoration(
-          labelText: "Search Items",
-          prefixIcon: Icon(Icons.search),
-          border: OutlineInputBorder(),
         ),
       ),
     );
@@ -113,14 +81,24 @@ class _HomePageState extends State<HomePage> {
   dataTable(List<Item> items) {
     return DataTable(
       columns: const [
-        DataColumn(label: Text('Name')),
-        DataColumn(label: Text('Delete')),
+        DataColumn(
+          label: Center(
+            child: Text('Name'),
+          ),
+        ),
+        DataColumn(
+          label: Center(
+            child: Text('Delete'),
+          ),
+        ),
       ],
       rows: items
           .map(
             (item) => DataRow(cells: [
           DataCell(
-            Text(item.name),
+            Center(
+              child: Text(item.name),
+            ),
             onTap: () {
               setState(() {
                 curItemId = item.id;
@@ -128,13 +106,17 @@ class _HomePageState extends State<HomePage> {
               });
             },
           ),
-          DataCell(IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: () {
-              dbHelper.deleteItem(item.id!);
-              searchForItems();
-            },
-          )),
+          DataCell(
+            Center(
+              child: IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () {
+                  dbHelper.deleteItem(item.id!);
+                  refreshList();
+                },
+              ),
+            ),
+          ),
         ]),
       )
           .toList(),
@@ -148,7 +130,7 @@ class _HomePageState extends State<HomePage> {
         builder: (context, AsyncSnapshot<List<Item>> snapshot) {
           if (snapshot.hasData) {
             return SingleChildScrollView(
-              child: dataTable(filteredItems.isEmpty ? snapshot.data! : filteredItems),
+              child: dataTable(snapshot.data!),
             );
           }
           if (snapshot.data == null || snapshot.data!.isEmpty) {
@@ -164,24 +146,34 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SQLite CRUD with Search'),
+        title: const Text('SQLite CRUD with Gradient Background'),
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.blue, Colors.purple], // Gradient colors
-            begin: Alignment.topLeft, // Starting point
-            end: Alignment.bottomRight, // Ending point
+            begin: Alignment.topLeft, // Starting point of the gradient
+            end: Alignment.bottomRight, // Ending point of the gradient
+            colors: [
+              Colors.blue, // First color (top left)
+              Colors.purple, // Second color (bottom right)
+            ],
           ),
         ),
         child: Column(
           children: [
-            searchBar(),
             form(),
             list(),
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          validate();
+        },
+        child: Icon(Icons.add),
+        backgroundColor: Colors.blue,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
