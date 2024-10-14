@@ -1,7 +1,6 @@
-//main dart
 import 'package:flutter/material.dart';
-import 'db_helper.dart'; // Ensure this is created correctly
-import 'model/item.dart'; // Ensure the Item model is defined
+import 'db_helper.dart'; // Database helper file
+import 'model/item.dart'; // Item model file
 
 void main() => runApp(MyApp());
 
@@ -10,7 +9,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'SQLite CRUD',
-      debugShowCheckedModeBanner: false,  // Removes the debug banner
+      debugShowCheckedModeBanner: false,
       home: HomePage(),
     );
   }
@@ -25,21 +24,17 @@ class _HomePageState extends State<HomePage> {
   late Future<List<Item>> items;
   TextEditingController controller = TextEditingController();
   String name = "";
-  int? curItemId; // Changed from curUserId to curItemId for clarity
+  String searchQuery = "";
+  int? curItemId;
   final formKey = GlobalKey<FormState>();
   late DatabaseHelper dbHelper;
+  List<Item> filteredItems = [];
 
   @override
   void initState() {
     super.initState();
-    dbHelper = DatabaseHelper(); // Initialize the DatabaseHelper class
-    refreshList();
-  }
-
-  refreshList() {
-    setState(() {
-      items = dbHelper.getItems(); // Fetch all items
-    });
+    dbHelper = DatabaseHelper();
+    searchForItems();
   }
 
   clearName() {
@@ -51,15 +46,22 @@ class _HomePageState extends State<HomePage> {
     if (formKey.currentState!.validate()) {
       formKey.currentState!.save();
       if (curItemId == null) {
-        // If no current item is selected, insert a new one
         dbHelper.insertItem(Item(name: name));
       } else {
-        // Update the existing item
         dbHelper.updateItem(Item(id: curItemId, name: name));
       }
       clearName();
-      refreshList(); // Refresh the list after any action
+      searchForItems();
     }
+  }
+
+  void searchForItems() async {
+    if (searchQuery.isNotEmpty) {
+      filteredItems = await dbHelper.searchItems(searchQuery);
+    } else {
+      filteredItems = await dbHelper.getItems();
+    }
+    setState(() {});
   }
 
   form() {
@@ -78,12 +80,31 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 10),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey, // Gray color for the button
+                backgroundColor: Colors.grey,
               ),
               onPressed: validate,
               child: Text(curItemId == null ? 'Add' : 'Update'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  searchBar() {
+    return Padding(
+      padding: const EdgeInsets.all(15.0),
+      child: TextField(
+        onChanged: (value) {
+          setState(() {
+            searchQuery = value;
+          });
+          searchForItems();
+        },
+        decoration: InputDecoration(
+          labelText: "Search Items",
+          prefixIcon: Icon(Icons.search),
+          border: OutlineInputBorder(),
         ),
       ),
     );
@@ -111,7 +132,7 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.delete),
             onPressed: () {
               dbHelper.deleteItem(item.id!);
-              refreshList(); // Refresh after deleting
+              searchForItems();
             },
           )),
         ]),
@@ -123,11 +144,11 @@ class _HomePageState extends State<HomePage> {
   list() {
     return Expanded(
       child: FutureBuilder(
-        future: items,
+        future: dbHelper.getItems(),
         builder: (context, AsyncSnapshot<List<Item>> snapshot) {
           if (snapshot.hasData) {
             return SingleChildScrollView(
-              child: dataTable(snapshot.data!),
+              child: dataTable(filteredItems.isEmpty ? snapshot.data! : filteredItems),
             );
           }
           if (snapshot.data == null || snapshot.data!.isEmpty) {
@@ -143,12 +164,19 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SQLite CRUD'),
+        title: const Text('SQLite CRUD with Search'),
       ),
       body: Container(
-        color: Colors.grey[300], // Set background color to light gray
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.blue, Colors.purple], // Gradient colors
+            begin: Alignment.topLeft, // Starting point
+            end: Alignment.bottomRight, // Ending point
+          ),
+        ),
         child: Column(
           children: [
+            searchBar(),
             form(),
             list(),
           ],

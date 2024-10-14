@@ -1,8 +1,8 @@
-//item
 class Item {
   int? id;
   String name;
 
+  // Constructor
   Item({this.id, required this.name});
 
   // Convert Item to Map (for SQLite)
