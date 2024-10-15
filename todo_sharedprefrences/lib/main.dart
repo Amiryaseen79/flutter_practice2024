@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:todo_sharedprefrences/settingpage.dart';
+import 'settings_page.dart';
 
 void main() {
   runApp(TodoApp());
@@ -12,52 +13,54 @@ class TodoApp extends StatefulWidget {
 }
 
 class _TodoAppState extends State<TodoApp> {
-  bool isDarkMode = false;
+  Color appBarColor = Colors.blue; // Default app bar color
 
   @override
   void initState() {
     super.initState();
-    loadTheme();
+    loadAppBarColor();
   }
 
-  // Load saved theme from Shared Preferences
-  Future<void> loadTheme() async {
+  // Load saved app bar color from Shared Preferences
+  Future<void> loadAppBarColor() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      isDarkMode = prefs.getBool('isDarkMode') ?? false;
+      int? colorValue = prefs.getInt('appBarColor');
+      if (colorValue != null) {
+        appBarColor = Color(colorValue);
+      }
     });
   }
 
-  // Save theme to Shared Preferences
-  Future<void> saveTheme(bool value) async {
+  // Save app bar color to Shared Preferences
+  Future<void> saveAppBarColor(Color color) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool('isDarkMode', value);
+    prefs.setInt('appBarColor', color.value);
   }
 
-  // Toggle between Light and Dark mode
-  void toggleTheme(bool value) {
+  // Change app bar color
+  void changeAppBarColor(Color color) {
     setState(() {
-      isDarkMode = value;
-      saveTheme(isDarkMode);
+      appBarColor = color;
     });
+    saveAppBarColor(color); // Save the color change
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'To-Do List with Theme',
-      theme: isDarkMode ? ThemeData.dark() : ThemeData.light(),
-      debugShowCheckedModeBanner: false, // Disable debug banner
-      home: TodoScreen(toggleTheme: toggleTheme, isDarkMode: isDarkMode),
+      title: 'To-Do List with Color Picker',
+      debugShowCheckedModeBanner: false,
+      home: TodoScreen(changeAppBarColor: changeAppBarColor, appBarColor: appBarColor),
     );
   }
 }
 
 class TodoScreen extends StatefulWidget {
-  final Function(bool) toggleTheme;
-  final bool isDarkMode;
+  final Function(Color) changeAppBarColor;
+  final Color appBarColor;
 
-  TodoScreen({required this.toggleTheme, required this.isDarkMode});
+  TodoScreen({required this.changeAppBarColor, required this.appBarColor});
 
   @override
   _TodoScreenState createState() => _TodoScreenState();
@@ -121,8 +124,10 @@ class _TodoScreenState extends State<TodoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.lightGreen,
       appBar: AppBar(
-        title: Text('To-Do List'),
+        title: Text('MAIN'), centerTitle: true,
+        backgroundColor: widget.appBarColor, // Apply the selected app bar color
         actions: [
           IconButton(
             icon: Icon(Icons.settings),
@@ -131,8 +136,8 @@ class _TodoScreenState extends State<TodoScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => SettingsScreen(
-                    toggleTheme: widget.toggleTheme,
-                    isDarkMode: widget.isDarkMode,
+                    changeAppBarColor: widget.changeAppBarColor,
+                    currentAppBarColor: widget.appBarColor,
                   ),
                 ),
               );
